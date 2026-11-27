@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check shell script syntax (zsh -n)
+        run: |
+          for f in scripts/*.sh; do
+            echo "Checking syntax: $f"
+            zsh -n "$f"
+          done
+
+      - name: Verify script executable permissions
+        run: |
+          for f in scripts/*.sh; do
+            test -x "$f" || { echo "Not executable: $f"; exit 1; }
+          done
+
+      - name: Verify SKILL.md YAML frontmatter
+        run: |
+          head -n 10 SKILL.md | grep -q "^name: macos-clean-setup"
+          head -n 10 SKILL.md | grep -q "^description:"
+
+      - name: Run read-only audit scripts smoke test
+        run: |
+          ./scripts/audit_system.sh
+          ./scripts/audit_disk.sh
+          ./scripts/audit_services.sh
